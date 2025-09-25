@@ -1,49 +1,87 @@
 console.log("[HoverSave] content injected at", location.href);
-let lastHoverEl = null;
 
+let lastHoverEl = null;
 document.addEventListener("mousemove", (e) => {
   lastHoverEl = e.target;
 }, { capture: true, passive: true });
 
-// Fallback local key listener (works if the page isn't inside a locked iframe)
+// --- Shortcut logic: J + (7|8|9|0) ---
+// Works if J is HELD while pressing the number, or if you press J then the number within a short window.
+let jHeld = false;
+let jLastDownAt = 0;
+const COMBO_MS = 600; // window for J then number
+
+const keyToClass = {
+  "7": "child1",
+  "8": "child2",
+  "9": "child3",
+  "0": "adult"
+};
+
 document.addEventListener("keydown", (e) => {
-  if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey && e.code === "Space") {
-    e.preventDefault();
-    trigger();
+  // normalize key (ignore modifiers)
+  if (e.repeat) return;
+
+  // track J press/hold
+  if (e.key && e.key.toLowerCase() === "j") {
+    jHeld = true;
+    jLastDownAt = Date.now();
+    return;
+  }
+
+  // number keys only when J is held or was just pressed
+  if (keyToClass[e.key]) {
+    const now = Date.now();
+    if (jHeld || (now - jLastDownAt) <= COMBO_MS) {
+      e.preventDefault();
+      const image_class = keyToClass[e.key];
+      trigger(image_class);
+    }
   }
 }, true);
 
-// Preferred path: background command -> content trigger
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type === "trigger-hover-save") {
-    trigger().then(() => sendResponse({ status: "attempted" }));
-    return true;
+document.addEventListener("keyup", (e) => {
+  if (e.key && e.key.toLowerCase() === "j") {
+    jHeld = false;
   }
-});
+}, true);
 
-async function trigger() {
+async function trigger(image_class) {
   try {
-    const startEl = lastHoverEl || document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+    const startEl = lastHoverEl || document.elementFromPoint(innerWidth/2, innerHeight/2);
     const info = findImageForElement(startEl);
     if (!info?.url) return toast("No image found under cursor.");
+
     const filenameBase = suggestFilenameBase(info.url) || "image";
-    chrome.runtime.sendMessage({ type: "download-image-url", url: info.url, filename: filenameBase }, async (res) => {
-      if (res?.ok) return toast("Downloading image…");
-      try {
-        const dataUrl = await fetchAsDataUrl(info.url);
-        chrome.runtime.sendMessage({ type: "download-image-dataurl", dataUrl, filename: filenameBase }, (res2) => {
-          if (res2?.ok) toast("Downloading image (fallback)…");
-          else toast("Download failed.");
-        });
-      } catch {
-        toast("Could not fetch image (CORS/protected).");
+
+    chrome.runtime.sendMessage(
+      { type: "download-image-url", url: info.url, filename: filenameBase, image_class },
+      async (res) => {
+        if (res?.ok) {
+          toast(`Downloading (${image_class})…`);
+        } else {
+          // Fallback: fetch → dataURL (may be blocked by CORS)
+          try {
+            const dataUrl = await fetchAsDataUrl(info.url);
+            chrome.runtime.sendMessage(
+              { type: "download-image-dataurl", dataUrl, filename: filenameBase, image_class },
+              (res2) => {
+                if (res2?.ok) toast(`Downloading (fallback, ${image_class})…`);
+                else toast("Download failed.");
+              }
+            );
+          } catch (_) {
+            toast("Could not fetch image (CORS/protected).");
+          }
+        }
       }
-    });
+    );
   } catch (err) {
     toast("Error: " + (err?.message || err));
   }
 }
 
+// ---- Image resolution helpers ----
 function findImageForElement(startEl) {
   if (!startEl) return null;
   let el = startEl;
@@ -80,7 +118,8 @@ function findImageForElement(startEl) {
       if (url) return { url: absoluteUrl(url), el, type: "source" };
     }
 
-    el = el.parentElement || el.getRootNode()?.host || null; // follow into shadow roots
+    // Follow into shadow roots
+    el = el.parentElement || el.getRootNode()?.host || null;
   }
   return null;
 }
@@ -104,7 +143,9 @@ function suggestFilenameBase(u) {
   return "image-" + new Date().toISOString().replace(/[:.]/g, "-");
 }
 
-function sanitize(s) { return s.replace(/[^a-z0-9._-]+/gi, "_").slice(0, 80) || "image"; }
+function sanitize(s) {
+  return s.replace(/[^a-z0-9._-]+/gi, "_").slice(0, 80) || "image";
+}
 
 async function fetchAsDataUrl(url) {
   const resp = await fetch(url, { credentials: "include" });
@@ -118,7 +159,7 @@ async function fetchAsDataUrl(url) {
   });
 }
 
-// Tiny toast
+// ---- Tiny toast ----
 let toastTimer;
 function toast(text) {
   try { clearTimeout(toastTimer); } catch {}
@@ -128,7 +169,8 @@ function toast(text) {
     div.id = "__hover_save_toast__";
     Object.assign(div.style, {
       position: "fixed", right: "12px", bottom: "12px", padding: "8px 12px",
-      background: "rgba(0,0,0,0.75)", color: "#fff", font: "13px system-ui, -apple-system, Segoe UI, Roboto, Arial",
+      background: "rgba(0,0,0,0.75)", color: "#fff",
+      font: "13px system-ui, -apple-system, Segoe UI, Roboto, Arial",
       borderRadius: "8px", zIndex: 2147483647, transition: "opacity .2s"
     });
     document.documentElement.appendChild(div);

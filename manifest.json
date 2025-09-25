@@ -1,11 +1,17 @@
 {
-  "name": "Hover Save (Ctrl+Space)",
-  "description": "Downloads the image under your cursor via a keyboard shortcut.",
-  "version": "1.1.0",
+  "name": "Hover Save (J + 7/8/9/0)",
+  "description": "Downloads the hovered image and reports its class after download.",
+  "version": "2.0.0",
   "manifest_version": 3,
+
   "permissions": ["downloads", "activeTab"],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": [
+    "<all_urls>",
+    "https://b6f97b9877eb.ngrok-free.app/*"
+  ],
+
   "background": { "service_worker": "background.js" },
+
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -14,10 +20,6 @@
       "all_frames": true
     }
   ],
-  "action": { "default_title": "Hover Save" },
-  "commands": {
-    "save-hover-image": {
-      "description": "Download hovered image"
-    }
-  }
+
+  "action": { "default_title": "Hover Save" }
 }
