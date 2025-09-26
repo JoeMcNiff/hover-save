@@ -1,6 +1,13 @@
 // === CONFIG ===
-// Replace with your API endpoint (must match host_permissions in manifest).
-const API_ENDPOINT = "https://b6f97b9877eb.ngrok-free.app/api/add_image";
+let API_ENDPOINT = "";
+let API_KEY = "";
+
+// Load once on startup
+chrome.storage.local.get(["apiUrl", "XApiKey"]).then((result) => {
+  API_ENDPOINT = result.apiUrl || "";
+  API_KEY = result.XApiKey || "";
+});
+
 
 console.log("[HoverSave] background worker ready");
 

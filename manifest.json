@@ -4,10 +4,10 @@
   "version": "2.0.0",
   "manifest_version": 3,
 
-  "permissions": ["downloads", "activeTab"],
+  "permissions": ["downloads", "storage", "activeTab"],
   "host_permissions": [
     "<all_urls>",
-    "https://b6f97b9877eb.ngrok-free.app/*"
+    "https://154b17a945b0.ngrok-free.app/*"
   ],
 
   "background": { "service_worker": "background.js" },
@@ -21,5 +21,13 @@
     }
   ],
 
-  "action": { "default_title": "Hover Save" }
+  "action": {
+    "default_title": "Hover Save"
+  },
+  "options_ui": {
+    "page": "settings.html",
+    "open_in_tab": false
+  }
+
+
 }

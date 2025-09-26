@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Uploader Settings</title>
+    <style>
+        body {
+            width: 400px;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #4ba25f 100%);
+            color: white;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]::placeholder, input[type="password"]::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .save-button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #2ed573;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .save-button:hover {
+            background: #26d0ce;
+            transform: translateY(-1px);
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status.success {
+            background: rgba(46, 213, 115, 0.2);
+            border: 1px solid rgba(46, 213, 115, 0.5);
+        }
+
+        .status.error {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.5);
+        }
+
+        .instructions {
+            font-size: 12px;
+            opacity: 0.8;
+            line-height: 1.4;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ Settings</h1>
+        
+        <form id="settingsForm">
+            <div class="form-group">
+                <label for="apiUrl">API Endpoint URL</label>
+                <input type="text" id="apiUrl" placeholder="https://api.yourdomain.com/api/add_image" required>
+            </div>
+
+            <div class="form-group">
+                <label for="XApiKey">X-API-Key</label>
+                <input type="password" id="XApiKey" placeholder="your-api-key" required>
+            </div>
+
+            <div>
+                <label>Key Labels</label>
+            </div>
+
+            <div class="form-group">
+                <label for="j7Label">Label for J + 7</label>
+                <input type="text" id="j7Label" placeholder="label1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="j8Label">Label for J + 8</label>
+                <input type="text" id="j8Label" placeholder="label2" required>
+            </div>
+
+            <div class="form-group">
+                <label for="j9Label">Label for J + 9</label>
+                <input type="text" id="j9Label" placeholder="label3" required>
+            </div>
+
+            <div class="form-group">
+                <label for="j0Label">Label for J + 0</label>
+                <input type="text" id="j0Label" placeholder="label4" required>
+            </div>
+
+            <button type="submit" class="save-button">Save Settings</button>
+        </form>
+
+        <div class="status" id="statusMessage"></div>
+
+        <div class="instructions">
+            Provide the endpoint in your API that accepts a multipart <code>file</code> field and add the corresponding <code>x-api-key</code> value.<br>
+            Make sure the extension's host permissions in <code>manifest.json</code> include the domain of your API so requests are allowed.
+        </div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+</html> 
