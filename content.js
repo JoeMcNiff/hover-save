@@ -11,12 +11,15 @@ let jHeld = false;
 let jLastDownAt = 0;
 const COMBO_MS = 600; // window for J then number
 
-const keyToClass = {
-  "7": "child1",
-  "8": "child2",
-  "9": "child3",
-  "0": "adult"
-};
+const keyToClass = {};
+
+// load keys
+chrome.storage.local.get(["j7Label", "j8Label", "j9Label", "j0Label"]).then((result) => {
+  keyToClass["7"] = result.j7Label || "";
+  keyToClass["8"] = result.j8Label || "";
+  keyToClass["9"] = result.j9Label || "";
+  keyToClass["0"] = result.j0Label || "";
+});
 
 document.addEventListener("keydown", (e) => {
   // normalize key (ignore modifiers)
