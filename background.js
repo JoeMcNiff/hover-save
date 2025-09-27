@@ -17,75 +17,51 @@ const pending = new Map();
 
 // Listen for download requests from content script
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg?.type === "download-image-url" && msg.url) {
-    const filename = (msg.filename || "image") + (guessExt(msg.url) || "");
-    const payload = { image_class: msg.image_class || null, requestedFilename: filename };
+  if (msg?.type === "upload-image-by-url" && msg.url) {
+    (async () => {
+      try {
+        // 1) Fetch the image
+        const resp = await fetch(msg.url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-    chrome.downloads.download(
-      { url: msg.url, filename, saveAs: false, conflictAction: "uniquify" },
-      (dlId) => {
-        const err = chrome.runtime.lastError;
-        if (err || !dlId) {
-          sendResponse({ ok: false, reason: err?.message || "Download failed" });
-        } else {
-          pending.set(dlId, payload);
-          sendResponse({ ok: true, dlId });
-        }
+        const blob = await resp.blob();
+
+        // 2) Convert to base64
+        const arrayBuf = await blob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuf);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        const base64 = btoa(binary);
+
+        // 3) Build payload (JSON)
+        const payload = {
+          image_class: msg.image_class || null,
+          requestedFilename: (msg.filename || "image"),
+          page_url: msg.page_url || null,
+          image_url: msg.url,
+          element_type: msg.element_type || null,
+          image_mime: blob.type || "application/octet-stream",
+          image_base64: base64
+        };
+
+        // 4) POST to your API
+        const r = await fetch(API_ENDPOINT, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(API_KEY ? { "X-Api-Key": API_KEY } : {})
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!r.ok) throw new Error(`API HTTP ${r.status}`);
+        sendResponse({ ok: true });
+      } catch (e) {
+        sendResponse({ ok: false, reason: e?.message || String(e) });
       }
-    );
+    })();
+
     return true; // async response
-  }
-
-  if (msg?.type === "download-image-dataurl" && msg.dataUrl) {
-    const ext = dataUrlExt(msg.dataUrl) || ".png";
-    const filename = (msg.filename || "image") + ext;
-    const payload = { image_class: msg.image_class || null, requestedFilename: filename };
-
-    chrome.downloads.download(
-      { url: msg.dataUrl, filename, saveAs: false, conflictAction: "uniquify" },
-      (dlId) => {
-        const err = chrome.runtime.lastError;
-        if (err || !dlId) {
-          sendResponse({ ok: false, reason: err?.message || "Download failed" });
-        } else {
-          pending.set(dlId, payload);
-          sendResponse({ ok: true, dlId });
-        }
-      }
-    );
-    return true; // async response
-  }
-});
-
-// When a download completes, look up its absolute path and POST to the API
-chrome.downloads.onChanged.addListener(async (delta) => {
-  if (!delta.state || delta.state.current !== "complete") return;
-  const dlId = delta.id;
-
-  try {
-    const [item] = await chrome.downloads.search({ id: dlId });
-    if (!item) return;
-
-    const meta = pending.get(dlId);
-    pending.delete(dlId);
-
-    // item.filename is the absolute local path to the saved file
-    const body = {
-      image_path: item.filename,
-      image_class: meta?.image_class || null
-    };
-
-    // Post to your API endpoint
-    // Note: Make sure your server accepts requests from an extension (CORS).
-    await fetch(API_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    }).catch((e) => {
-      console.warn("[HoverSave] API POST failed:", e?.message || e);
-    });
-  } catch (e) {
-    console.warn("[HoverSave] onChanged handler error:", e?.message || e);
   }
 });
 

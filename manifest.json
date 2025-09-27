@@ -4,10 +4,9 @@
   "version": "2.0.0",
   "manifest_version": 3,
 
-  "permissions": ["downloads", "storage", "activeTab"],
+  "permissions": ["storage", "activeTab"],
   "host_permissions": [
-    "<all_urls>",
-    "https://154b17a945b0.ngrok-free.app/*"
+    "<all_urls>"
   ],
 
   "background": { "service_worker": "background.js" },

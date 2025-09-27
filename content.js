@@ -58,24 +58,19 @@ async function trigger(image_class) {
     const filenameBase = suggestFilenameBase(info.url) || "image";
 
     chrome.runtime.sendMessage(
-      { type: "download-image-url", url: info.url, filename: filenameBase, image_class },
-      async (res) => {
+      {
+        type: "upload-image-by-url",
+        url: info.url,
+        filename: filenameBase,
+        image_class,
+        page_url: location.href,
+        element_type: info.type
+      },
+      (res) => {
         if (res?.ok) {
-          toast(`Downloading (${image_class})…`);
+          toast(`Uploading (${image_class})…`);
         } else {
-          // Fallback: fetch → dataURL (may be blocked by CORS)
-          try {
-            const dataUrl = await fetchAsDataUrl(info.url);
-            chrome.runtime.sendMessage(
-              { type: "download-image-dataurl", dataUrl, filename: filenameBase, image_class },
-              (res2) => {
-                if (res2?.ok) toast(`Downloading (fallback, ${image_class})…`);
-                else toast("Download failed.");
-              }
-            );
-          } catch (_) {
-            toast("Could not fetch image (CORS/protected).");
-          }
+          toast(res?.reason || "Upload failed.");
         }
       }
     );
